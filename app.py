@@ -2,6 +2,7 @@ import streamlit as st
 from datetime import date
 import pandas as pd
 import os
+import io
 
 # 🛠️ Configuração da página
 st.set_page_config(page_title="Registro de Ações - PESA", layout="centered")
@@ -50,7 +51,6 @@ if enviar:
         st.write("**Resultados/Impacto:**", resultados)
 
         # 🔄 Salvando em Excel
-        arquivo_excel = "registros_acoes.xlsx"
         novo_registro = {
             "Nome da ação": nome_acao,
             "Descrição": descricao,
@@ -59,11 +59,23 @@ if enviar:
             "Resultados/Impacto": resultados
         }
 
+        # Lê o Excel existente ou cria novo DataFrame
+        arquivo_excel = "registros_acoes.xlsx"
         if os.path.exists(arquivo_excel):
             df_existente = pd.read_excel(arquivo_excel)
             df_novo = pd.concat([df_existente, pd.DataFrame([novo_registro])], ignore_index=True)
         else:
             df_novo = pd.DataFrame([novo_registro])
 
-        df_novo.to_excel(arquivo_excel, index=False)
-        st.info("📁 Registro salvo em *registros_acoes.xlsx*")
+        # 📁 Salva na memória para download
+        output = io.BytesIO()
+        df_novo.to_excel(output, index=False, engine='openpyxl')
+        output.seek(0)
+
+        # 📥 Botão para baixar o Excel
+        st.download_button(
+            label="📥 Baixar planilha atualizada",
+            data=output,
+            file_name="registros_acoes.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
